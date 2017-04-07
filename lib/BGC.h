@@ -9,6 +9,8 @@ void bgc_right();
 void bgc_left();
 void bgc_down();
 void bgc_up();
+void bgc_mode_follow();
+void bgc_mode_no_follow();
 
 
 #endif // OTTER_BGC_
