@@ -7,10 +7,10 @@
 
 #define REC_PWM_PIN A0
 #define FOCUS_PWM_PIN A1
-#define IRIS_PWM_PIN A4
+#define IRIS_PWM_PIN A5
 
 #define MAX_PWM 2000
-#define MIN_PWM 1100
+#define MIN_PWM 1000
 #define ANOMALY_MOVE_AMOUNT 200
 
 #define DEBOUNCE 1000
@@ -18,31 +18,40 @@
 volatile unsigned long last_iris_change;
 volatile unsigned long last_focus_change;
 
+volatile int rec_pwm = 1500;
+volatile bool is_recording = false;
+
+volatile int focus_pwm = 1500;
+volatile int iris_pwm = 1500;
+
+
 void handle_rec_change(volatile int last_pwm, volatile int current_pwm) {
-  if (last_pwm > MAX_PWM || last_pwm < MIN_PWM ||
-      current_pwm > MAX_PWM || current_pwm < MIN_PWM) return;
 
-  if (0 == ((last_pwm - current_pwm) / 333)) return;
+  rec_pwm = (9*rec_pwm + 1*current_pwm) / 10;
 
-  lanc_rec();
+  if (rec_pwm > 1700 && !is_recording) {
+    lanc_rec();
+    is_recording = true;
+  } else if (rec_pwm < 1200 && is_recording) {
+    lanc_rec();
+    is_recording = false;
+  }
 }
 
 void handle_focus_change(volatile int last_pwm, volatile int current_pwm) {
-  // Serial.println(current_pwm);
-
-  if (current_pwm > MAX_PWM || current_pwm < MIN_PWM)
-    return;
 
   if ((millis() - last_focus_change) < DEBOUNCE)
     return;
 
-  if (current_pwm < 1200) {
+  focus_pwm = (9*focus_pwm + 1*current_pwm) / 10;
+
+  if (focus_pwm < 1200) {
     lanc_focus_near();
 
     if (last_focus_change == 0) {
       last_focus_change = millis();
     }
-  } else if (current_pwm > 1700) {
+  } else if (focus_pwm > 1700) {
     lanc_focus_far();
 
     if (last_focus_change == 0) {
@@ -54,30 +63,24 @@ void handle_focus_change(volatile int last_pwm, volatile int current_pwm) {
 }
 
 void handle_iris_change(volatile int last_pwm, volatile int current_pwm) {
-  // Serial.print(current_pwm);
-  // Serial.print(" ");
-  // Serial.print(millis());
-  // Serial.print(" ");
-  // Serial.println(last_iris_change);
-
-  if (current_pwm > MAX_PWM || current_pwm < MIN_PWM)
-    return;
 
   if ((millis() - last_iris_change) < DEBOUNCE)
     return;
 
-  if (current_pwm < 1200) {
+  iris_pwm = (9*iris_pwm + 1*current_pwm) / 10;
+
+  if (iris_pwm < 1200) {
     lanc_iris_dec();
 
     if (last_iris_change == 0) {
-      Serial.println(millis());
+      // Serial.println(millis());
       last_iris_change = millis();
     }
-  } else if (current_pwm > 1700) {
+  } else if (iris_pwm > 1700) {
     lanc_iris_inc();
 
     if (last_iris_change == 0) {
-      Serial.println(millis());
+      // Serial.println(millis());
       last_iris_change = millis();
     }
   } else {
@@ -87,7 +90,7 @@ void handle_iris_change(volatile int last_pwm, volatile int current_pwm) {
 
 void setup() {
   lanc_setup(LANC_OUTPUT_PIN, LANC_INPUT_PIN);
-  // Serial.begin(115200);
+  Serial.begin(115200);
 
   pwm_attach1(REC_PWM_PIN, handle_rec_change);
   pwm_attach2(FOCUS_PWM_PIN, handle_focus_change);
