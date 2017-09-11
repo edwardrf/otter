@@ -2,7 +2,7 @@
 #include "../../lib/PWM.h"
 #include "../../lib/BGC.h"
 
-#define BGC_OUTPUT_PIN 2
+#define BGC_OUTPUT_PIN 10 // D10
 #define VERTICAL_PWM_PIN A0
 #define HORIZONTAL_PWM_PIN A1
 #define MODE_PWM_PIN A2
