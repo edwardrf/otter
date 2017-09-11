@@ -7,24 +7,13 @@
 #define HORIZONTAL_PWM_PIN A1
 #define MODE_PWM_PIN A2
 
-#define MAX_PWM 2000
-#define MIN_PWM 1100
-#define ANOMALY_MOVE_AMOUNT 200
-
-void handle_vertical_change(volatile int last_pwm, volatile int current_pwm) {
-  if (current_pwm > MAX_PWM || current_pwm < MIN_PWM)
-    return;
-
-  if (current_pwm - last_pwm > ANOMALY_MOVE_AMOUNT ||
-      current_pwm - last_pwm < -ANOMALY_MOVE_AMOUNT)
-    return;
-
-  if (current_pwm > 1800) {
+void handle_vertical_change(unsigned long pwm) {
+  if (pwm > 1800) {
     bgc_up();
     return;
   }
 
-  if (current_pwm < 1200) {
+  if (pwm < 1200) {
     bgc_down();
     return;
   }
@@ -32,20 +21,13 @@ void handle_vertical_change(volatile int last_pwm, volatile int current_pwm) {
   bgc_vertical_freeze();
 }
 
-void handle_horizontal_change(volatile int last_pwm, volatile int current_pwm) {
-  if (current_pwm > MAX_PWM || current_pwm < MIN_PWM)
-    return;
-
-  if (current_pwm - last_pwm > ANOMALY_MOVE_AMOUNT ||
-      current_pwm - last_pwm < -ANOMALY_MOVE_AMOUNT)
-    return;
-
-  if (current_pwm > 1800) {
+void handle_horizontal_change(unsigned long pwm) {
+  if (pwm > 1800) {
     bgc_left();
     return;
   }
 
-  if (current_pwm < 1200) {
+  if (pwm < 1200) {
     bgc_right();
     return;
   }
@@ -53,17 +35,10 @@ void handle_horizontal_change(volatile int last_pwm, volatile int current_pwm) {
   bgc_horizontal_freeze();
 }
 
-void handle_mode_change(volatile int last_pwm, volatile int current_pwm) {
-  if (current_pwm > MAX_PWM || current_pwm < MIN_PWM)
-    return;
-
-  if (current_pwm - last_pwm > ANOMALY_MOVE_AMOUNT ||
-      current_pwm - last_pwm < -ANOMALY_MOVE_AMOUNT)
-    return;
-
-  if (current_pwm < 1200) {
+void handle_mode_change(unsigned long pwm) {
+  if (pwm < 1200) {
     bgc_mode_no_follow();
-  } else if (current_pwm > 1700) {
+  } else if (pwm > 1700) {
     bgc_mode_follow();
   }
 }
