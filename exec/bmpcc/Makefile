@@ -9,7 +9,7 @@ ARDMK_DIR = /usr/share/arduino
 # ARDUINO_VAR_PATH = /usr/share/arduino/hardware/arduino/avr/variants
 # BOOTLOADER_PARENT = /usr/share/arduino/hardware/arduino/avr/bootloaders
 
-ARDUINO_LIBS = TimerOne PinChangeInterrupt
+ARDUINO_LIBS = PinChangeInterrupt
 
 BOARD_TAG    = nano
 BOARD_SUB = atmega328
