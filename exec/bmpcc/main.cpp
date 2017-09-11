@@ -9,82 +9,75 @@
 #define FOCUS_PWM_PIN A1
 #define IRIS_PWM_PIN A5
 
-#define MAX_PWM 2000
-#define MIN_PWM 1000
-#define ANOMALY_MOVE_AMOUNT 200
+#define DELAY 1000
 
-#define DEBOUNCE 1000
+#define S_FOCUS_NONE 0
+#define S_FOCUS_FAR 1
+#define S_FOCUS_NEAR 2
 
-volatile unsigned long last_iris_change;
-volatile unsigned long last_focus_change;
+#define S_IRIS_NONE 0
+#define S_IRIS_INC 1
+#define S_IRIS_DEC 2
+ 
+#define S_RECORDING_NONE 0
+#define S_RECORDING_TOGGLE 1
+
+volatile unsigned long last_focus_near;
+volatile unsigned long last_focus_far;
+volatile unsigned long last_iris_dec;
+volatile unsigned long last_iris_inc;
 
 volatile int rec_pwm = 1500;
-volatile bool is_recording = false;
-
 volatile int focus_pwm = 1500;
 volatile int iris_pwm = 1500;
 
+volatile bool is_recording = false;
 
-void handle_rec_change(volatile int last_pwm, volatile int current_pwm) {
+volatile int signal_recording = S_RECORDING_NONE;
+volatile int signal_focus = S_FOCUS_NONE;
+volatile int signal_iris = S_IRIS_NONE;
 
-  rec_pwm = (9*rec_pwm + 1*current_pwm) / 10;
+
+void handle_rec_change(unsigned long pwm) {
+
+  rec_pwm = (9*rec_pwm + 1*pwm) / 10;
 
   if (rec_pwm > 1700 && !is_recording) {
-    lanc_rec();
     is_recording = true;
+
+    signal_recording = S_RECORDING_TOGGLE;
   } else if (rec_pwm < 1200 && is_recording) {
-    lanc_rec();
     is_recording = false;
+
+    signal_recording = S_RECORDING_TOGGLE;
+  } else {
+    signal_recording = S_RECORDING_NONE;
   }
 }
 
-void handle_focus_change(volatile int last_pwm, volatile int current_pwm) {
+void handle_focus_change(unsigned long pwm) {
 
-  if ((millis() - last_focus_change) < DEBOUNCE)
-    return;
-
-  focus_pwm = (9*focus_pwm + 1*current_pwm) / 10;
+  focus_pwm = (9*focus_pwm + 1*pwm) / 10;
 
   if (focus_pwm < 1200) {
-    lanc_focus_near();
-
-    if (last_focus_change == 0) {
-      last_focus_change = millis();
-    }
+    signal_focus = S_FOCUS_NEAR;
   } else if (focus_pwm > 1700) {
-    lanc_focus_far();
-
-    if (last_focus_change == 0) {
-      last_focus_change = millis();
-    }
+    signal_focus = S_FOCUS_FAR;
   } else {
-    last_focus_change = 0;
+    signal_focus = S_FOCUS_NONE;
   }
 }
 
-void handle_iris_change(volatile int last_pwm, volatile int current_pwm) {
+void handle_iris_change(unsigned long pwm) {
 
-  if ((millis() - last_iris_change) < DEBOUNCE)
-    return;
-
-  iris_pwm = (9*iris_pwm + 1*current_pwm) / 10;
+  iris_pwm = (9*iris_pwm + 1*pwm) / 10;
 
   if (iris_pwm < 1200) {
-    lanc_iris_dec();
-
-    if (last_iris_change == 0) {
-      // Serial.println(millis());
-      last_iris_change = millis();
-    }
+    signal_iris = S_IRIS_DEC;
   } else if (iris_pwm > 1700) {
-    lanc_iris_inc();
-
-    if (last_iris_change == 0) {
-      // Serial.println(millis());
-      last_iris_change = millis();
-    }
+    signal_iris = S_IRIS_INC;
   } else {
-    last_iris_change = 0;
+    signal_iris = S_IRIS_NONE;
   }
 }
 
@@ -97,5 +90,40 @@ void setup() {
   pwm_attach3(IRIS_PWM_PIN, handle_iris_change);
 }
 
+// each lanc command takes at least 8.69ms
+// pwm duration is 2ms
 void loop() {
+  if (signal_recording == S_RECORDING_TOGGLE) {
+    exec_without_pcint(lanc_rec);
+  }
+
+  // millis() takes 50 days to overflow, safe to ignore
+  // https://www.arduino.cc/en/Reference/Millis
+  if (signal_focus == S_FOCUS_NEAR
+      && (millis() - last_focus_near) > DELAY) {
+
+    exec_without_pcint(lanc_focus_near);
+
+    last_focus_near = millis();
+  } else if (signal_focus == S_FOCUS_FAR
+      && (millis() - last_focus_far) > DELAY) {
+
+    exec_without_pcint(lanc_focus_far);
+
+    last_focus_far = millis();
+  }
+
+  if (signal_iris == S_IRIS_DEC
+      && (millis() - last_iris_dec) > DELAY) {
+
+    exec_without_pcint(lanc_iris_dec);
+
+    last_iris_dec = millis();
+  } else if (signal_iris == S_IRIS_INC
+      && (millis() - last_iris_inc) > DELAY) {
+
+    exec_without_pcint(lanc_iris_inc);
+
+    last_iris_inc = millis();
+  }
 }
