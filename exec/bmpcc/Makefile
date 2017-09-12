@@ -1,9 +1,10 @@
 PROJECT_DIR = ~/Arduino/otter
 
 # ARDUINO_VERSION = 1.6.10
-ARDUINO_DIR = /usr/share/arduino
+ARDUINO_DIR = /home/edwardrf/Programs/arduino-1.8.4
 ARDMK_DIR = /usr/share/arduino
-# AVR_TOOLS_DIR = /usr
+AVR_TOOLS_DIR = /home/edwardrf/Programs/arduino-1.8.4/hardware/tools/avr
+USER_LIB_PATH = ../../libraries
 # ARDUINO_CORE_PATH = /usr/share/arduino/hardware/arduino/avr/cores/arduino
 # BOARDS_TXT = /usr/share/arduino/hardware/arduino/avr/boards.txt
 # ARDUINO_VAR_PATH = /usr/share/arduino/hardware/arduino/avr/variants
